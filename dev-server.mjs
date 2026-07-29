@@ -36,6 +36,15 @@ const serviceOptions = new Set([
   "System Integration",
   "Other"
 ]);
+const serviceLabels = new Map([
+  ["ERP Development", "Pengembangan ERP"],
+  ["Website Development", "Pengembangan Situs Web"],
+  ["Custom Software Development", "Pengembangan Perangkat Lunak Khusus"],
+  ["Artificial Intelligence", "Kecerdasan Buatan"],
+  ["Dashboard and Analytics", "Dasbor dan Analitik"],
+  ["System Integration", "Integrasi Sistem"],
+  ["Other", "Lainnya"]
+]);
 
 const attachmentTypes = {
   pdf: "application/pdf",
@@ -82,13 +91,13 @@ export const validateInquiry = (body) => {
   };
 
   const errors = {};
-  if (record.name.length < 2) errors.name = "Please provide your name.";
-  if (record.company.length < 2) errors.company = "Please provide your company name.";
-  if (!validEmail(record.email)) errors.email = "Please provide a valid email address.";
-  if (record.whatsapp && !/^[+0-9()\-\s]{7,24}$/.test(record.whatsapp)) errors.whatsapp = "Please provide a valid WhatsApp number.";
-  if (!serviceOptions.has(record.service)) errors.service = "Please choose a valid service.";
-  if (record.brief.length < 20) errors.brief = "Please provide at least 20 characters of project context.";
-  if (!record.consent) errors.consent = "Consent is required before the inquiry can be processed.";
+  if (record.name.length < 2) errors.name = "Mohon masukkan nama Anda.";
+  if (record.company.length < 2) errors.company = "Mohon masukkan nama perusahaan Anda.";
+  if (!validEmail(record.email)) errors.email = "Mohon masukkan alamat email yang valid.";
+  if (record.whatsapp && !/^[+0-9()\-\s]{7,24}$/.test(record.whatsapp)) errors.whatsapp = "Mohon masukkan nomor WhatsApp yang valid.";
+  if (!serviceOptions.has(record.service)) errors.service = "Mohon pilih layanan yang valid.";
+  if (record.brief.length < 20) errors.brief = "Mohon berikan konteks proyek minimal 20 karakter.";
+  if (!record.consent) errors.consent = "Persetujuan diperlukan sebelum konsultasi dapat diproses.";
 
   return { valid: Object.keys(errors).length === 0, errors, record };
 };
@@ -158,22 +167,24 @@ const inquiryId = () => {
   return `INQ-${date}-${randomUUID().slice(0, 8).toUpperCase()}`;
 };
 
+const serviceLabel = (service) => serviceLabels.get(service) || service;
+
 const formatInquiryEmail = (record) => [
-  `New website inquiry: ${record.id}`,
+  `Konsultasi situs web baru: ${record.id}`,
   "",
-  `Name: ${record.name}`,
-  `Company: ${record.company}`,
+  `Nama: ${record.name}`,
+  `Perusahaan: ${record.company}`,
   `Email: ${record.email}`,
-  `WhatsApp: ${record.whatsapp || "Not provided"}`,
-  `Service: ${record.service}`,
-  `Business type: ${record.businessType || "Not provided"}`,
-  `Budget: ${record.budget || "Not provided"}`,
-  `Timeline: ${record.timeline || "Not provided"}`,
+  `WhatsApp: ${record.whatsapp || "Tidak diberikan"}`,
+  `Layanan: ${serviceLabel(record.service)}`,
+  `Jenis bisnis: ${record.businessType || "Tidak diberikan"}`,
+  `Anggaran: ${record.budget || "Tidak diberikan"}`,
+  `Target waktu: ${record.timeline || "Tidak diberikan"}`,
   "",
-  "Project context:",
+  "Konteks proyek:",
   record.brief,
   "",
-  `Submitted: ${record.submittedAt}`
+  `Dikirim: ${record.submittedAt}`
 ].join("\n");
 
 const sendEmailNotifications = async (record, emailAttachment) => {
@@ -183,21 +194,21 @@ const sendEmailNotifications = async (record, emailAttachment) => {
     return { notificationDelivered: false, confirmationDelivered: false, configured: false };
   }
 
-  const fromEmail = process.env.INQUIRY_FROM_EMAIL || "Nexora Website <onboarding@resend.dev>";
+  const fromEmail = process.env.INQUIRY_FROM_EMAIL || "Studio Sistem Digital <onboarding@resend.dev>";
   const send = async (payload) => {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    if (!response.ok) throw new Error(`Email provider returned ${response.status}.`);
+    if (!response.ok) throw new Error(`Penyedia email mengembalikan status ${response.status}.`);
   };
 
   const adminPayload = {
     from: fromEmail,
     to: [toEmail],
     reply_to: record.email,
-    subject: `[${record.id}] ${record.service} inquiry from ${record.company}`,
+    subject: `[${record.id}] Konsultasi ${serviceLabel(record.service)} dari ${record.company}`,
     text: formatInquiryEmail(record)
   };
   if (emailAttachment) adminPayload.attachments = [emailAttachment];
@@ -205,16 +216,16 @@ const sendEmailNotifications = async (record, emailAttachment) => {
   const confirmationPayload = {
     from: fromEmail,
     to: [record.email],
-    subject: `We received your project inquiry (${record.id})`,
+    subject: `Kami telah menerima konsultasi proyek Anda (${record.id})`,
     text: [
-      `Hello ${record.name},`,
+      `Halo ${record.name},`,
       "",
-      "Thank you for sharing your project context. Your inquiry has been received and will be reviewed before we recommend the right next step.",
+      "Terima kasih telah membagikan konteks proyek Anda. Konsultasi Anda telah diterima dan akan kami tinjau sebelum merekomendasikan langkah lanjutan yang tepat.",
       "",
-      `Reference: ${record.id}`,
-      `Service: ${record.service}`,
+      `Referensi: ${record.id}`,
+      `Layanan: ${serviceLabel(record.service)}`,
       "",
-      "Nexora Digital"
+      "Studio Sistem Digital"
     ].join("\n")
   };
 
@@ -229,7 +240,7 @@ const sendEmailNotifications = async (record, emailAttachment) => {
 const handleInquiry = async (request, response) => {
   const address = request.socket.remoteAddress || "unknown";
   if (!withinRateLimit(address)) {
-    sendJson(response, 429, { message: "Too many inquiries were sent from this connection. Please try again later." });
+    sendJson(response, 429, { message: "Terlalu banyak konsultasi dikirim dari koneksi ini. Silakan coba lagi nanti." });
     return;
   }
 
@@ -243,7 +254,7 @@ const handleInquiry = async (request, response) => {
     }
 
     if (!valid) {
-      sendJson(response, 422, { message: "Please review the highlighted inquiry details.", errors });
+      sendJson(response, 422, { message: "Periksa kembali detail konsultasi yang ditandai.", errors });
       return;
     }
 
@@ -269,19 +280,19 @@ const handleInquiry = async (request, response) => {
     });
   } catch (error) {
     if (error.message === "PAYLOAD_TOO_LARGE") {
-      sendJson(response, 413, { message: "The inquiry or attachment is too large." });
+      sendJson(response, 413, { message: "Konsultasi atau lampiran terlalu besar." });
       return;
     }
     if (error.message === "INVALID_ATTACHMENT") {
-      sendJson(response, 422, { message: "The attachment must be a valid PDF, DOC, or DOCX file no larger than 2 MB." });
+      sendJson(response, 422, { message: "Lampiran harus berupa PDF, DOC, atau DOCX yang valid dengan ukuran maksimal 2 MB." });
       return;
     }
     if (error instanceof SyntaxError) {
-      sendJson(response, 400, { message: "The inquiry request was not valid JSON." });
+      sendJson(response, 400, { message: "Permintaan konsultasi tidak memiliki format JSON yang valid." });
       return;
     }
-    console.error("Inquiry processing failed:", error);
-    sendJson(response, 500, { message: "The inquiry could not be saved. Please try again or contact us by email." });
+    console.error("Pemrosesan konsultasi gagal:", error);
+    sendJson(response, 500, { message: "Konsultasi tidak dapat disimpan. Silakan coba lagi atau hubungi kami melalui email." });
   }
 };
 
@@ -290,13 +301,13 @@ const serveStatic = async (request, response, pathname) => {
   if (!extname(requestedPath) && !requestedPath.endsWith("/")) requestedPath = `${requestedPath}.html`;
   const extension = extname(requestedPath).toLowerCase();
   if (!mimeTypes[extension]) {
-    sendJson(response, 404, { message: "Not found." });
+    sendJson(response, 404, { message: "Tidak ditemukan." });
     return;
   }
 
   const filePath = resolve(ROOT, `.${requestedPath}`);
   if (filePath !== ROOT && !filePath.startsWith(`${ROOT}${sep}`)) {
-    sendJson(response, 403, { message: "Forbidden." });
+    sendJson(response, 403, { message: "Akses ditolak." });
     return;
   }
 
@@ -311,8 +322,8 @@ const serveStatic = async (request, response, pathname) => {
     if (request.method === "HEAD") response.end();
     else response.end(file);
   } catch (error) {
-    if (error.code !== "ENOENT") console.error("Static file error:", error);
-    sendJson(response, 404, { message: "Not found." });
+    if (error.code !== "ENOENT") console.error("Kesalahan berkas statis:", error);
+    sendJson(response, 404, { message: "Tidak ditemukan." });
   }
 };
 
@@ -323,7 +334,7 @@ export const app = createServer(async (request, response) => {
   try {
     pathname = decodeURIComponent(url.pathname);
   } catch {
-    sendJson(response, 400, { message: "Invalid URL." });
+    sendJson(response, 400, { message: "URL tidak valid." });
     return;
   }
 
@@ -337,7 +348,7 @@ export const app = createServer(async (request, response) => {
     return;
   }
 
-  sendJson(response, 405, { message: "Method not allowed." });
+  sendJson(response, 405, { message: "Metode tidak diizinkan." });
 });
 
 const isMain = process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url;
@@ -345,6 +356,6 @@ if (isMain) {
   const port = Number(process.env.PORT || 4173);
   const host = process.env.HOST || "0.0.0.0";
   app.listen(port, host, () => {
-    console.log(`Nexora website running at http://${host}:${port}`);
+    console.log(`Situs web berjalan di http://${host}:${port}`);
   });
 }

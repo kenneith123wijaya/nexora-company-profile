@@ -1,10 +1,10 @@
 const navigation = [
-  { key: "home", label: "Home", href: "/" },
-  { key: "prototype-work", label: "Prototype Work", href: "/prototype-work" },
-  { key: "services", label: "Services", href: "/services" },
-  { key: "solutions", label: "Solutions", href: "/solutions" },
-  { key: "process", label: "Process", href: "/process" },
-  { key: "about", label: "About", href: "/about" }
+  { key: "home", label: "Beranda", href: "/" },
+  { key: "prototype-work", label: "Karya Prototipe", href: "/prototype-work" },
+  { key: "services", label: "Layanan", href: "/services" },
+  { key: "solutions", label: "Solusi", href: "/solutions" },
+  { key: "process", label: "Proses", href: "/process" },
+  { key: "about", label: "Tentang", href: "/about" }
 ];
 const entrySeenKey = "nexora.prototypeEntrySeen.v1";
 
@@ -37,28 +37,28 @@ export const mountSiteShell = () => {
     headerHost.outerHTML = `
       <header class="site-header" data-header>
         <div class="header-inner shell">
-          <a class="brand" href="/" aria-label="Home">
+          <a class="brand" href="/" aria-label="Beranda">
             <span class="brand-glyph" aria-hidden="true">N</span>
           </a>
-          <nav class="desktop-nav" aria-label="Primary navigation">
+          <nav class="desktop-nav" aria-label="Navigasi utama">
             ${navigation.map((item) => navigationLink(item, activePage)).join("")}
           </nav>
           <div class="header-actions">
             <a class="button button-small button-primary header-cta${activePage === "contact" ? " is-current" : ""}" href="/contact"${activePage === "contact" ? ' aria-current="page"' : ""}>
-              <span>Request consultation</span>
+              <span>Minta konsultasi</span>
               <i data-lucide="arrow-up-right" aria-hidden="true"></i>
             </a>
-            <button class="icon-button menu-toggle" type="button" data-menu-toggle data-tooltip="Open menu" aria-label="Open navigation menu" aria-controls="mobile-menu" aria-expanded="false">
+            <button class="icon-button menu-toggle" type="button" data-menu-toggle data-tooltip="Buka menu" aria-label="Buka menu navigasi" aria-controls="mobile-menu" aria-expanded="false">
               <i data-lucide="menu" aria-hidden="true"></i>
             </button>
           </div>
         </div>
         <div class="mobile-menu" id="mobile-menu" data-mobile-menu aria-hidden="true">
-          <nav aria-label="Mobile navigation">
+          <nav aria-label="Navigasi seluler">
             ${navigation.map((item) => navigationLink(item, activePage, "")).join("")}
-            <a class="mobile-menu-cta${activePage === "contact" ? " is-active" : ""}" href="/contact"${activePage === "contact" ? ' aria-current="page"' : ""}>Request consultation</a>
+            <a class="mobile-menu-cta${activePage === "contact" ? " is-active" : ""}" href="/contact"${activePage === "contact" ? ' aria-current="page"' : ""}>Minta konsultasi</a>
           </nav>
-          <p>Focused digital systems for real operational work.</p>
+          <p>Sistem digital terarah untuk pekerjaan operasional nyata.</p>
         </div>
       </header>`;
   }
@@ -68,37 +68,37 @@ export const mountSiteShell = () => {
       <footer class="site-footer">
         <div class="shell footer-main">
           <div class="footer-brand">
-            <a class="brand" href="/" aria-label="Home"><span class="brand-glyph" aria-hidden="true">N</span></a>
-            <p>Digital systems designed around real business operations.</p>
+            <a class="brand" href="/" aria-label="Beranda"><span class="brand-glyph" aria-hidden="true">N</span></a>
+            <p>Sistem digital yang dirancang berdasarkan operasi bisnis nyata.</p>
             <span>Surabaya, Indonesia</span>
           </div>
           <div class="footer-column">
-            <h2>Expertise</h2>
-            <a href="/prototype-work">Prototype Work</a>
-            <a href="/services">Services</a>
-            <a href="/solutions">Solutions</a>
+            <h2>Keahlian</h2>
+            <a href="/prototype-work">Karya Prototipe</a>
+            <a href="/services">Layanan</a>
+            <a href="/solutions">Solusi</a>
           </div>
           <div class="footer-column">
-            <h2>Company</h2>
-            <a href="/process">Process</a>
-            <a href="/about">About</a>
-            <a href="/contact">Contact</a>
+            <h2>Perusahaan</h2>
+            <a href="/process">Proses</a>
+            <a href="/about">Tentang</a>
+            <a href="/contact">Kontak</a>
           </div>
           <div class="footer-column footer-contact">
-            <h2>Start with context</h2>
-            <p>Share the pressure point, workflow, or product idea that needs a clearer next step.</p>
-            <a href="/contact"><i data-lucide="message-circle" aria-hidden="true"></i> Project inquiry</a>
+            <h2>Mulai dari konteks</h2>
+            <p>Ceritakan kendala, alur kerja, atau ide produk yang memerlukan langkah lanjutan yang lebih jelas.</p>
+            <a href="/contact"><i data-lucide="message-circle" aria-hidden="true"></i> Konsultasi proyek</a>
           </div>
         </div>
         <div class="shell footer-bottom">
-          <span>&copy; <span data-current-year></span> Digital Systems Studio. All rights reserved.</span>
-          <div><a href="/privacy">Privacy</a><a href="/terms">Terms</a></div>
+          <span>&copy; <span data-current-year></span> Studio Sistem Digital. Hak cipta dilindungi.</span>
+          <div><a href="/privacy">Privasi</a><a href="/terms">Ketentuan</a></div>
         </div>
       </footer>
-      <a class="floating-contact" href="/contact" data-tooltip="Start a conversation" aria-label="Start a conversation">
-        <i data-lucide="message-circle" aria-hidden="true"></i><span>Let's talk</span>
+      <a class="floating-contact" href="/contact" data-tooltip="Mulai percakapan" aria-label="Mulai percakapan">
+        <i data-lucide="message-circle" aria-hidden="true"></i><span>Mari bicara</span>
       </a>
-      <button class="back-to-top icon-button" type="button" data-back-top data-tooltip="Back to top" aria-label="Back to top">
+      <button class="back-to-top icon-button" type="button" data-back-top data-tooltip="Kembali ke atas" aria-label="Kembali ke atas">
         <i data-lucide="arrow-up" aria-hidden="true"></i>
       </button>
       <div class="toast" role="status" aria-live="polite" data-toast></div>`;

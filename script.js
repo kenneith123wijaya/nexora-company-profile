@@ -262,7 +262,7 @@ const t = (source, parameters = {}) =>
 
       const title = previewSlides[activePreview].dataset.previewTitle;
       if (previewTitle) previewTitle.textContent = title;
-      previewCarousel.setAttribute("aria-label", `${title}, ${activePreview + 1} of ${previewSlides.length}`);
+      previewCarousel.setAttribute("aria-label", `${title}, ${activePreview + 1} dari ${previewSlides.length}`);
     };
 
     const stepPreview = (direction) => renderPreview(activePreview + direction);

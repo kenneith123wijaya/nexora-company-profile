@@ -32,13 +32,13 @@ await mkdir(output, { recursive: true });
 
 const issues = [];
 const pageDefinitions = [
-  { path: "/", key: "home", marker: ".hero", title: "See working products" },
-  { path: "/services", key: "services", marker: "[data-service-stage]", title: "Build the system" },
-  { path: "/prototype-work", key: "prototype-work", marker: "[data-project='erp']", title: "Proof you can inspect" },
-  { path: "/solutions", key: "solutions", marker: "[data-solution-stage]", title: "Start with the operating problem" },
-  { path: "/process", key: "process", marker: "[data-process='0']", title: "Clear decisions" },
-  { path: "/about", key: "about", marker: ".about-values", title: "Business understanding" },
-  { path: "/contact", key: "contact", marker: "#inquiry-form", title: "Bring the pressure point" }
+  { path: "/", key: "home", marker: ".hero", title: "Lihat produk yang bekerja" },
+  { path: "/services", key: "services", marker: "[data-service-stage]", title: "Bangun sistem" },
+  { path: "/prototype-work", key: "prototype-work", marker: "[data-project='erp']", title: "Bukti yang dapat Anda pelajari" },
+  { path: "/solutions", key: "solutions", marker: "[data-solution-stage]", title: "Mulai dari masalah operasional" },
+  { path: "/process", key: "process", marker: "[data-process='0']", title: "Keputusan yang jelas" },
+  { path: "/about", key: "about", marker: ".about-values", title: "Pemahaman bisnis" },
+  { path: "/contact", key: "contact", marker: "#inquiry-form", title: "Bawa kendala" }
 ];
 
 const attachDiagnostics = (page, label) => {
@@ -147,7 +147,7 @@ for (const definition of pageDefinitions) {
   if (state.headingRight > state.clientWidth + 1) issues.push(`${definition.path} heading exceeded the viewport.`);
   if (state.missingAlt) issues.push(`${definition.path} has ${state.missingAlt} images without alt attributes.`);
   if (state.duplicateIds.length) issues.push(`${definition.path} has duplicate IDs: ${state.duplicateIds.join(", ")}.`);
-  if (state.language !== "en") issues.push(`${definition.path} language is ${state.language}.`);
+  if (state.language !== "id") issues.push(`${definition.path} language is ${state.language}.`);
   if (!state.pageReady) issues.push(`${definition.path} did not finish its page-entry transition.`);
   if (definition.key !== "contact" && (state.activeDesktop.length !== 1 || state.activeDesktop[0] !== definition.path)) {
     issues.push(`${definition.path} did not expose one correct active desktop navigation item.`);
@@ -193,7 +193,7 @@ await prototypeNavigation;
 await waitForPage(desktop, pageDefinitions[1]);
 await desktop.click('[data-service-category="customPlatforms"]');
 await desktop.waitForTimeout(220);
-if (!(await desktop.locator("[data-service-title]").textContent()).includes("specific process")) issues.push("Service explorer did not update.");
+if (!(await desktop.locator("[data-service-title]").textContent()).includes("proses khusus")) issues.push("Service explorer did not update.");
 const serviceCtaHref = await desktop.locator("[data-service-cta]").getAttribute("href");
 if (!serviceCtaHref?.includes("service=Custom%20Software%20Development")) issues.push("Service CTA did not preserve its inquiry context.");
 await Promise.all([desktop.waitForURL(/\/contact\?service=/), desktop.click("[data-service-cta]")]);
@@ -204,7 +204,7 @@ await desktop.locator('[data-solution="automate"]').scrollIntoViewIfNeeded();
 await desktop.waitForTimeout(760);
 await desktop.click('[data-solution="automate"]');
 await desktop.waitForTimeout(240);
-if (!(await desktop.locator("[data-solution-title]").textContent()).includes("Automate")) issues.push("Solution explorer did not update.");
+if (!(await desktop.locator("[data-solution-title]").textContent()).includes("Otomatiskan")) issues.push("Solution explorer did not update.");
 
 await waitForPage(desktop, pageDefinitions[2]);
 const introVisual = desktop.locator(".page-intro [data-scene-visual]");
@@ -251,7 +251,7 @@ const previewCaseOpener = desktop.locator('[data-preview-slide][data-position="0
 await previewCaseOpener.click();
 await desktop.locator("#case-dialog").waitFor({ state: "visible" });
 previewCarouselState.openedCase = (await desktop.locator("[data-case-title]").textContent())?.trim();
-if (previewCarouselState.openedCase !== "Modular ERP Operations Platform") issues.push(`Active prototype image opened the wrong details: ${previewCarouselState.openedCase}.`);
+if (previewCarouselState.openedCase !== "Platform Operasional ERP Modular") issues.push(`Active prototype image opened the wrong details: ${previewCarouselState.openedCase}.`);
 await desktop.click("[data-close-case]");
 if (!(await previewCaseOpener.evaluate((element) => element === document.activeElement))) issues.push("Prototype detail dialog did not restore focus to its image.");
 
@@ -266,7 +266,7 @@ const clientState = await desktop.evaluate(() => ({
     naturalHeight: logo.naturalHeight
   }))
 }));
-if (clientState.heading !== "Our Clients") issues.push("Prototype Work did not expose the Our Clients heading.");
+if (clientState.heading !== "Klien Kami") issues.push("Prototype Work did not expose the localized client heading.");
 if (clientState.logos.length !== 4 || clientState.logos.some((logo) => !logo.complete || !logo.naturalWidth || !logo.naturalHeight)) {
   issues.push(`Client logos did not load correctly: ${JSON.stringify(clientState.logos)}.`);
 }
@@ -298,7 +298,7 @@ await desktop.click("[data-close-case]");
 await waitForPage(desktop, pageDefinitions[4]);
 await desktop.click('[data-process="2"]');
 await desktop.waitForTimeout(220);
-if (!(await desktop.locator("[data-process-title]").textContent()).includes("Build")) issues.push("Process explorer did not update.");
+if (!(await desktop.locator("[data-process-title]").textContent()).includes("Bangun secara bertahap")) issues.push("Process explorer did not update.");
 
 await waitForPage(desktop, pageDefinitions[5]);
 await desktop.click(".accordion-item:nth-child(2) button");
@@ -306,12 +306,12 @@ if (!(await desktop.locator(".accordion-item:nth-child(2)").evaluate((item) => i
 
 await desktop.goto(`${baseUrl}/contact?service=ERP%20Development`, { waitUntil: "networkidle" });
 if ((await desktop.inputValue('[name="service"]')) !== "ERP Development") issues.push("Direct Contact query did not prefill the service.");
-await desktop.fill('[name="name"]', "Visual Test");
-await desktop.fill('[name="company"]', "Example Company");
+await desktop.fill('[name="name"]', "Uji Visual");
+await desktop.fill('[name="company"]', "Perusahaan Contoh");
 await desktop.fill('[name="email"]', "visual@example.com");
 await desktop.click("[data-form-next]");
 if (!(await desktop.locator('[data-form-step="2"]').isVisible())) issues.push("Inquiry form did not advance to step two.");
-await desktop.fill('[name="brief"]', "E2E inquiry context that is long enough for validation.");
+await desktop.fill('[name="brief"]', "Konteks konsultasi E2E ini cukup panjang untuk melewati validasi.");
 await desktop.check('[name="consent"]');
 await desktop.click("[data-submit-button]");
 await desktop.locator("[data-form-success]").waitFor({ state: "visible" });
@@ -401,7 +401,7 @@ const legalPage = await browser.newPage({ viewport: { width: 1366, height: 900 }
 attachDiagnostics(legalPage, "legal");
 for (const legalPath of ["/privacy", "/terms"]) {
   await legalPage.goto(`${baseUrl}${legalPath}`, { waitUntil: "networkidle" });
-  if ((await legalPage.getAttribute("html", "lang")) !== "en") issues.push(`${legalPath} is not explicitly English.`);
+  if ((await legalPage.getAttribute("html", "lang")) !== "id") issues.push(`${legalPath} is not explicitly Indonesian.`);
 }
 await legalPage.close();
 await desktop.close();

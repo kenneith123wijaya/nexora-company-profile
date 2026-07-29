@@ -87,7 +87,7 @@ test("calendar event starts one hour later and lasts thirty minutes", async () =
       { method: "popup", minutes: 10 }
     ]);
     assert.match(event.description, /INQ-20260712-ABC12345/);
-    assert.match(event.description, /Project context:/);
+    assert.match(event.description, /Konteks proyek:/);
     assert.doesNotMatch(event.description, /attachment|consent/i);
   });
 });

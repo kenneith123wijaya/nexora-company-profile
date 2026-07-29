@@ -1,7 +1,7 @@
 {
-  "name": "Digital Systems Studio",
-  "short_name": "Digital Studio",
-  "description": "ERP, custom software, AI, analytics, and digital platforms designed around real business operations.",
+  "name": "Studio Sistem Digital",
+  "short_name": "Studio Digital",
+  "description": "ERP, perangkat lunak khusus, AI, analitik, dan platform digital yang dirancang berdasarkan operasi bisnis nyata.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#07100c",

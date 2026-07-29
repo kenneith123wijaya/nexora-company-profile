@@ -18,6 +18,15 @@ const serviceOptions = new Set([
   "System Integration",
   "Other"
 ]);
+const serviceLabels = new Map([
+  ["ERP Development", "Pengembangan ERP"],
+  ["Website Development", "Pengembangan Situs Web"],
+  ["Custom Software Development", "Pengembangan Perangkat Lunak Khusus"],
+  ["Artificial Intelligence", "Kecerdasan Buatan"],
+  ["Dashboard and Analytics", "Dasbor dan Analitik"],
+  ["System Integration", "Integrasi Sistem"],
+  ["Other", "Lainnya"]
+]);
 
 const attachmentTypes = {
   pdf: "application/pdf",
@@ -55,13 +64,13 @@ const validateInquiry = (body) => {
   };
 
   const errors = {};
-  if (record.name.length < 2) errors.name = "Please provide your name.";
-  if (record.company.length < 2) errors.company = "Please provide your company name.";
-  if (!validEmail(record.email)) errors.email = "Please provide a valid email address.";
-  if (record.whatsapp && !/^[+0-9()\-\s]{7,24}$/.test(record.whatsapp)) errors.whatsapp = "Please provide a valid WhatsApp number.";
-  if (!serviceOptions.has(record.service)) errors.service = "Please choose a valid service.";
-  if (record.brief.length < 20) errors.brief = "Please provide at least 20 characters of project context.";
-  if (!record.consent) errors.consent = "Consent is required before the inquiry can be processed.";
+  if (record.name.length < 2) errors.name = "Mohon masukkan nama Anda.";
+  if (record.company.length < 2) errors.company = "Mohon masukkan nama perusahaan Anda.";
+  if (!validEmail(record.email)) errors.email = "Mohon masukkan alamat email yang valid.";
+  if (record.whatsapp && !/^[+0-9()\-\s]{7,24}$/.test(record.whatsapp)) errors.whatsapp = "Mohon masukkan nomor WhatsApp yang valid.";
+  if (!serviceOptions.has(record.service)) errors.service = "Mohon pilih layanan yang valid.";
+  if (record.brief.length < 20) errors.brief = "Mohon berikan konteks proyek minimal 20 karakter.";
+  if (!record.consent) errors.consent = "Persetujuan diperlukan sebelum konsultasi dapat diproses.";
 
   return { valid: Object.keys(errors).length === 0, errors, record };
 };
@@ -106,22 +115,24 @@ const makeInquiryId = () => {
   return `INQ-${date}-${randomUUID().slice(0, 8).toUpperCase()}`;
 };
 
+const serviceLabel = (service) => serviceLabels.get(service) || service;
+
 const formatInquiryEmail = (record) => [
-  `New website inquiry: ${record.id}`,
+  `Konsultasi situs web baru: ${record.id}`,
   "",
-  `Name: ${record.name}`,
-  `Company: ${record.company}`,
+  `Nama: ${record.name}`,
+  `Perusahaan: ${record.company}`,
   `Email: ${record.email}`,
-  `WhatsApp: ${record.whatsapp || "Not provided"}`,
-  `Service: ${record.service}`,
-  `Business type: ${record.businessType || "Not provided"}`,
-  `Budget: ${record.budget || "Not provided"}`,
-  `Timeline: ${record.timeline || "Not provided"}`,
+  `WhatsApp: ${record.whatsapp || "Tidak diberikan"}`,
+  `Layanan: ${serviceLabel(record.service)}`,
+  `Jenis bisnis: ${record.businessType || "Tidak diberikan"}`,
+  `Anggaran: ${record.budget || "Tidak diberikan"}`,
+  `Target waktu: ${record.timeline || "Tidak diberikan"}`,
   "",
-  "Project context:",
+  "Konteks proyek:",
   record.brief,
   "",
-  `Submitted: ${record.submittedAt}`
+  `Dikirim: ${record.submittedAt}`
 ].join("\n");
 
 const sendEmail = async (payload, { fetchImpl = fetch, idempotencyKey } = {}) => {
@@ -164,17 +175,17 @@ export const buildCalendarEvent = (record) => {
   const end = new Date(start.getTime() + 30 * 60 * 1_000);
   const timeZone = getCalendarConfig().timeZone;
   return {
-    summary: `[New inquiry] ${record.company} - ${record.service}`,
+    summary: `[Konsultasi baru] ${record.company} - ${serviceLabel(record.service)}`,
     description: [
-      `Inquiry: ${record.id}`,
-      `Name: ${record.name}`,
-      `Company: ${record.company}`,
+      `Konsultasi: ${record.id}`,
+      `Nama: ${record.name}`,
+      `Perusahaan: ${record.company}`,
       `Email: ${record.email}`,
-      `WhatsApp: ${record.whatsapp || "Not provided"}`,
-      `Service: ${record.service}`,
-      `Timeline: ${record.timeline || "Not provided"}`,
+      `WhatsApp: ${record.whatsapp || "Tidak diberikan"}`,
+      `Layanan: ${serviceLabel(record.service)}`,
+      `Target waktu: ${record.timeline || "Tidak diberikan"}`,
       "",
-      "Project context:",
+      "Konteks proyek:",
       record.brief
     ].join("\n"),
     start: { dateTime: start.toISOString(), timeZone },
@@ -217,34 +228,34 @@ export const createCalendarFollowUp = async (
 };
 
 export const handleInquiry = async (request, dependencies = {}) => {
-  if (request.method !== "POST") return json({ message: "Method not allowed." }, 405);
+  if (request.method !== "POST") return json({ message: "Metode tidak diizinkan." }, 405);
 
   const requestOrigin = request.headers.get("origin");
-  if (requestOrigin && requestOrigin !== new URL(request.url).origin) return json({ message: "Origin not allowed." }, 403);
+  if (requestOrigin && requestOrigin !== new URL(request.url).origin) return json({ message: "Asal permintaan tidak diizinkan." }, 403);
 
   const address = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  if (!withinRateLimit(address)) return json({ message: "Too many inquiries were sent. Please try again later." }, 429);
+  if (!withinRateLimit(address)) return json({ message: "Terlalu banyak konsultasi dikirim. Silakan coba lagi nanti." }, 429);
 
   let body;
   try {
     body = await request.json();
   } catch {
-    return json({ message: "The inquiry request was not valid JSON." }, 400);
+    return json({ message: "Permintaan konsultasi tidak memiliki format JSON yang valid." }, 400);
   }
 
   const { valid, errors, record } = validateInquiry(body || {});
   if (record.website) return json({ id: makeInquiryId(), stored: true }, 201);
-  if (!valid) return json({ message: "Please review the highlighted inquiry details.", errors }, 422);
+  if (!valid) return json({ message: "Periksa kembali detail konsultasi yang ditandai.", errors }, 422);
 
   if (!process.env.RESEND_API_KEY || !process.env.INQUIRY_TO_EMAIL) {
-    return json({ message: "Inquiry email delivery is not configured yet." }, 503);
+    return json({ message: "Pengiriman email konsultasi belum dikonfigurasi." }, 503);
   }
 
   let attachment;
   try {
     attachment = prepareAttachment(body.attachment);
   } catch {
-    return json({ message: "The attachment must be a valid PDF, DOC, or DOCX file no larger than 2 MB." }, 422);
+    return json({ message: "Lampiran harus berupa PDF, DOC, atau DOCX yang valid dengan ukuran maksimal 2 MB." }, 422);
   }
 
   const savedRecord = {
@@ -253,12 +264,12 @@ export const handleInquiry = async (request, dependencies = {}) => {
     ...record,
     website: undefined
   };
-  const fromEmail = process.env.INQUIRY_FROM_EMAIL || "Nexora Website <onboarding@resend.dev>";
+  const fromEmail = process.env.INQUIRY_FROM_EMAIL || "Studio Sistem Digital <onboarding@resend.dev>";
   const adminEmail = {
     from: fromEmail,
     to: [process.env.INQUIRY_TO_EMAIL],
     reply_to: savedRecord.email,
-    subject: `[${savedRecord.id}] ${savedRecord.service} inquiry from ${savedRecord.company}`,
+    subject: `[${savedRecord.id}] Konsultasi ${serviceLabel(savedRecord.service)} dari ${savedRecord.company}`,
     text: formatInquiryEmail(savedRecord)
   };
   if (attachment) adminEmail.attachments = [attachment];
@@ -268,34 +279,34 @@ export const handleInquiry = async (request, dependencies = {}) => {
   try {
     await sendEmailImpl(adminEmail, { idempotencyKey: `${savedRecord.id}-admin` });
   } catch (error) {
-    console.error("Admin inquiry email failed:", error.message);
-    return json({ message: "The inquiry could not be delivered. Please contact us directly by email." }, 502);
+    console.error("Email konsultasi admin gagal:", error.message);
+    return json({ message: "Konsultasi tidak dapat dikirim. Silakan hubungi kami langsung melalui email." }, 502);
   }
 
   const [confirmationResult, calendarResult] = await Promise.allSettled([
     sendEmailImpl({
       from: fromEmail,
       to: [savedRecord.email],
-      subject: `We received your project inquiry (${savedRecord.id})`,
+      subject: `Kami telah menerima konsultasi proyek Anda (${savedRecord.id})`,
       text: [
-        `Hello ${savedRecord.name},`,
+        `Halo ${savedRecord.name},`,
         "",
-        "Thank you for sharing your project context. Your inquiry has been received and will be reviewed before we recommend the right next step.",
+        "Terima kasih telah membagikan konteks proyek Anda. Konsultasi Anda telah diterima dan akan kami tinjau sebelum merekomendasikan langkah lanjutan yang tepat.",
         "",
-        `Reference: ${savedRecord.id}`,
-        `Service: ${savedRecord.service}`,
+        `Referensi: ${savedRecord.id}`,
+        `Layanan: ${serviceLabel(savedRecord.service)}`,
         "",
-        "Nexora Digital"
+        "Studio Sistem Digital"
       ].join("\n")
     }, { idempotencyKey: `${savedRecord.id}-confirmation` }),
     createCalendarImpl(savedRecord)
   ]);
 
   if (confirmationResult.status === "rejected") {
-    console.error(`Customer confirmation failed for ${savedRecord.id}:`, confirmationResult.reason?.message || "UNKNOWN");
+    console.error(`Konfirmasi pelanggan gagal untuk ${savedRecord.id}:`, confirmationResult.reason?.message || "TIDAK_DIKETAHUI");
   }
   if (calendarResult.status === "rejected") {
-    console.error(`Calendar follow-up failed for ${savedRecord.id}:`, calendarResult.reason?.message || "UNKNOWN");
+    console.error(`Tindak lanjut kalender gagal untuk ${savedRecord.id}:`, calendarResult.reason?.message || "TIDAK_DIKETAHUI");
   }
 
   const calendarConfigured = calendarResult.status === "fulfilled"
