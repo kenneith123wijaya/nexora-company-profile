@@ -5,7 +5,7 @@ import {
   solutionData as solutionContent,
   uiText
 } from "./content.js";
-import { mountSiteShell } from "./site-shell.js";
+import { buildWhatsAppUrl, getWhatsAppServiceLabel, mountSiteShell } from "./site-shell.js";
 
 document.documentElement.classList.add("has-js");
 document.body.classList.add("is-page-entering");
@@ -73,6 +73,20 @@ const t = (source, parameters = {}) =>
     button.replaceChildren(text, glyph);
     renderIcons();
   };
+
+  const setWhatsAppLink = (link, { service = "", project = "" } = {}) => {
+    if (!link) return;
+    link.href = buildWhatsAppUrl({ service, project });
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+  };
+
+  $$('[data-whatsapp-link]').forEach((link) => {
+    setWhatsAppLink(link, {
+      service: link.dataset.whatsappService || link.dataset.servicePick || "",
+      project: link.dataset.whatsappProject || ""
+    });
+  });
 
   renderIcons();
 
@@ -445,7 +459,8 @@ const t = (source, parameters = {}) =>
       replaceDynamicIcon("[data-service-icon]", data.icon);
       const cta = $("[data-service-cta]");
       cta.dataset.servicePick = data.service;
-      cta.href = `/contact?service=${encodeURIComponent(data.service)}`;
+      cta.dataset.whatsappService = data.service;
+      setWhatsAppLink(cta, { service: data.service });
       $("span", cta).textContent = t(data.cta);
       renderServiceOfferings(data.offerings);
       renderIcons();
@@ -596,7 +611,9 @@ const t = (source, parameters = {}) =>
     renderCaseImage(0);
     const caseCta = $("[data-case-cta]");
     caseCta.dataset.servicePick = data.service;
-    caseCta.href = `/contact?service=${encodeURIComponent(data.service)}`;
+    caseCta.dataset.whatsappService = data.service;
+    caseCta.dataset.whatsappProject = t(data.title);
+    setWhatsAppLink(caseCta, { service: data.service, project: t(data.title) });
     caseDialog.showModal();
     document.body.classList.add("dialog-open");
     $("[data-close-case]").focus();
@@ -920,6 +937,17 @@ const t = (source, parameters = {}) =>
   if (requestedService && serviceSelect && [...serviceSelect.options].some((option) => option.value === requestedService)) {
     serviceSelect.value = requestedService;
     saveDraft();
+  }
+
+  const contactWhatsApp = $("[data-contact-whatsapp]");
+  const contactContextRow = $("[data-whatsapp-context-row]");
+  const contactContext = $("[data-whatsapp-context]");
+  if (contactWhatsApp) {
+    setWhatsAppLink(contactWhatsApp, { service: requestedService || "" });
+    if (requestedService && contactContextRow && contactContext) {
+      contactContext.textContent = getWhatsAppServiceLabel(requestedService);
+      contactContextRow.hidden = false;
+    }
   }
 
   $$('[data-service-pick]').forEach((link) => {

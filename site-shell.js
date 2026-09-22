@@ -8,6 +8,31 @@ const navigation = [
 ];
 const entrySeenKey = "nexora.prototypeEntrySeen.v1";
 
+export const WHATSAPP_NUMBER = "628113663435";
+
+const whatsappServiceLabels = {
+  "ERP Development": "Pengembangan ERP",
+  "Website Development": "Pengembangan situs web",
+  "Custom Software Development": "Pengembangan perangkat lunak khusus",
+  "Artificial Intelligence": "Kecerdasan buatan",
+  "Dashboard and Analytics": "Dasbor dan analitik",
+  "System Integration": "Integrasi sistem",
+  Other: "Kebutuhan digital lainnya"
+};
+
+export const getWhatsAppServiceLabel = (service = "") => whatsappServiceLabels[service] || service;
+
+export const buildWhatsAppMessage = ({ service = "", project = "" } = {}) => {
+  const lines = ["Halo, saya mengunjungi website Anda dan ingin berkonsultasi tentang proyek digital."];
+  if (project) lines.push(`Prototipe yang saya lihat: ${project}.`);
+  if (service) lines.push(`Kebutuhan yang diminati: ${getWhatsAppServiceLabel(service)}.`);
+  lines.push("Mohon bantu saya menentukan langkah selanjutnya.");
+  return lines.join("\n");
+};
+
+export const buildWhatsAppUrl = (context = {}) =>
+  `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(buildWhatsAppMessage(context))}`;
+
 const navigationLink = (item, activePage, className = "nav-link") => {
   const active = item.key === activePage;
   return `<a class="${className}${active ? " is-active" : ""}" href="${item.href}"${active ? ' aria-current="page"' : ""}>${item.label}</a>`;
@@ -17,6 +42,7 @@ export const mountSiteShell = () => {
   const activePage = document.body.dataset.page || "home";
   const headerHost = document.querySelector("[data-site-header]");
   const footerHost = document.querySelector("[data-site-footer]");
+  const whatsappUrl = buildWhatsAppUrl();
 
   if (activePage === "prototype-work") {
     try {
@@ -44,9 +70,9 @@ export const mountSiteShell = () => {
             ${navigation.map((item) => navigationLink(item, activePage)).join("")}
           </nav>
           <div class="header-actions">
-            <a class="button button-small button-primary header-cta${activePage === "contact" ? " is-current" : ""}" href="/contact"${activePage === "contact" ? ' aria-current="page"' : ""}>
-              <span>Minta konsultasi</span>
-              <i data-lucide="arrow-up-right" aria-hidden="true"></i>
+            <a class="button button-small button-primary header-cta" href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" data-whatsapp-link>
+              <span>Chat WhatsApp</span>
+              <i data-lucide="message-circle" aria-hidden="true"></i>
             </a>
             <button class="icon-button menu-toggle" type="button" data-menu-toggle data-tooltip="Buka menu" aria-label="Buka menu navigasi" aria-controls="mobile-menu" aria-expanded="false">
               <i data-lucide="menu" aria-hidden="true"></i>
@@ -56,7 +82,7 @@ export const mountSiteShell = () => {
         <div class="mobile-menu" id="mobile-menu" data-mobile-menu aria-hidden="true">
           <nav aria-label="Navigasi seluler">
             ${navigation.map((item) => navigationLink(item, activePage, "")).join("")}
-            <a class="mobile-menu-cta${activePage === "contact" ? " is-active" : ""}" href="/contact"${activePage === "contact" ? ' aria-current="page"' : ""}>Minta konsultasi</a>
+            <a class="mobile-menu-cta" href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" data-whatsapp-link>Chat WhatsApp</a>
           </nav>
           <p>Sistem digital terarah untuk pekerjaan operasional nyata.</p>
         </div>
@@ -87,7 +113,7 @@ export const mountSiteShell = () => {
           <div class="footer-column footer-contact">
             <h2>Mulai dari konteks</h2>
             <p>Ceritakan kendala, alur kerja, atau ide produk yang memerlukan langkah lanjutan yang lebih jelas.</p>
-            <a href="/contact"><i data-lucide="message-circle" aria-hidden="true"></i> Konsultasi proyek</a>
+            <a href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" data-whatsapp-link><i data-lucide="message-circle" aria-hidden="true"></i> Chat WhatsApp</a>
           </div>
         </div>
         <div class="shell footer-bottom">
@@ -95,7 +121,7 @@ export const mountSiteShell = () => {
           <div><a href="/privacy">Privasi</a><a href="/terms">Ketentuan</a></div>
         </div>
       </footer>
-      <a class="floating-contact" href="/contact" data-tooltip="Mulai percakapan" aria-label="Mulai percakapan">
+      <a class="floating-contact" href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" data-whatsapp-link data-tooltip="Chat WhatsApp" aria-label="Mulai chat WhatsApp">
         <i data-lucide="message-circle" aria-hidden="true"></i><span>Mari bicara</span>
       </a>
       <button class="back-to-top icon-button" type="button" data-back-top data-tooltip="Kembali ke atas" aria-label="Kembali ke atas">

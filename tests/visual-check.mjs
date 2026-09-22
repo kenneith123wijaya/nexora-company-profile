@@ -1,9 +1,9 @@
 import { existsSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const bundledPlaywright = join(
+const legacyBundledPlaywright = join(
   process.env.USERPROFILE || "",
   ".cache",
   "codex-runtimes",
@@ -17,7 +17,22 @@ const bundledPlaywright = join(
   "playwright",
   "index.mjs"
 );
-const playwrightModule = existsSync(bundledPlaywright) ? pathToFileURL(bundledPlaywright).href : "playwright";
+const codexRuntimeRoot = join(
+  process.env.LOCALAPPDATA || "",
+  "OpenAI",
+  "Codex",
+  "runtimes",
+  "cua_node"
+);
+const codexRuntimeDirectories = existsSync(codexRuntimeRoot)
+  ? await readdir(codexRuntimeRoot, { withFileTypes: true }).catch(() => [])
+  : [];
+const currentBundledPlaywright = codexRuntimeDirectories
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => join(codexRuntimeRoot, entry.name, "bin", "node_modules", "playwright", "index.mjs"))
+  .find(existsSync);
+const bundledPlaywright = [legacyBundledPlaywright, currentBundledPlaywright].find((candidate) => candidate && existsSync(candidate));
+const playwrightModule = bundledPlaywright ? pathToFileURL(bundledPlaywright).href : "playwright";
 const { chromium } = await import(playwrightModule);
 const installedBrowsers = [
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
@@ -38,7 +53,7 @@ const pageDefinitions = [
   { path: "/solutions", key: "solutions", marker: "[data-solution-stage]", title: "Mulai dari masalah operasional" },
   { path: "/process", key: "process", marker: "[data-process='0']", title: "Keputusan yang jelas" },
   { path: "/about", key: "about", marker: ".about-values", title: "Pemahaman bisnis" },
-  { path: "/contact", key: "contact", marker: "#inquiry-form", title: "Bawa kendala" }
+  { path: "/contact", key: "contact", marker: "[data-contact-whatsapp]", title: "Mulai percakapan proyek" }
 ];
 
 const attachDiagnostics = (page, label) => {
@@ -83,7 +98,7 @@ const markEntrySeen = (page) => page.addInitScript((key) => {
 const readPageState = (page) => page.evaluate(() => {
   const heading = document.querySelector("main h1");
   const activeDesktop = [...document.querySelectorAll(".desktop-nav [aria-current='page']")];
-  const activeCta = document.querySelector(".header-cta[aria-current='page']");
+  const headerCta = document.querySelector(".header-cta");
   return {
     page: document.body.dataset.page,
     title: document.title,
@@ -96,7 +111,7 @@ const readPageState = (page) => page.evaluate(() => {
       .map((element) => element.id)
       .filter((id, index, ids) => ids.indexOf(id) !== index),
     activeDesktop: activeDesktop.map((link) => link.getAttribute("href")),
-    activeCta: activeCta?.getAttribute("href") || "",
+    headerCta: headerCta?.getAttribute("href") || "",
     language: document.documentElement.lang,
     pageReady: document.body.classList.contains("is-page-ready")
   };
@@ -130,11 +145,6 @@ await firstVisitPage.close();
 const desktop = await browser.newPage({ viewport: { width: 1440, height: 960 }, deviceScaleFactor: 1 });
 await markEntrySeen(desktop);
 attachDiagnostics(desktop, "desktop");
-let submittedInquiry = null;
-await desktop.route("**/api/inquiry", async (route) => {
-  submittedInquiry = JSON.parse(route.request().postData() || "{}");
-  await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ id: "INQ-E2E-TEST" }) });
-});
 
 const desktopPages = {};
 for (const definition of pageDefinitions) {
@@ -152,7 +162,7 @@ for (const definition of pageDefinitions) {
   if (definition.key !== "contact" && (state.activeDesktop.length !== 1 || state.activeDesktop[0] !== definition.path)) {
     issues.push(`${definition.path} did not expose one correct active desktop navigation item.`);
   }
-  if (definition.key === "contact" && state.activeCta !== "/contact") issues.push("Contact CTA was not marked as the current page.");
+  if (!state.headerCta.startsWith("https://wa.me/628113663435?text=")) issues.push(`${definition.path} header CTA did not target the configured WhatsApp number.`);
   await desktop.screenshot({ path: join(output, `page-${definition.key}-desktop.png`), fullPage: false });
   if (definition.key !== "home") await desktop.screenshot({ path: join(output, `page-${definition.key}-full.png`), fullPage: true });
 }
@@ -195,9 +205,9 @@ await desktop.click('[data-service-category="customPlatforms"]');
 await desktop.waitForTimeout(220);
 if (!(await desktop.locator("[data-service-title]").textContent()).includes("proses khusus")) issues.push("Service explorer did not update.");
 const serviceCtaHref = await desktop.locator("[data-service-cta]").getAttribute("href");
-if (!serviceCtaHref?.includes("service=Custom%20Software%20Development")) issues.push("Service CTA did not preserve its inquiry context.");
-await Promise.all([desktop.waitForURL(/\/contact\?service=/), desktop.click("[data-service-cta]")]);
-if ((await desktop.inputValue('[name="service"]')) !== "Custom Software Development") issues.push("Cross-page service inquiry did not prefill Contact.");
+const serviceWhatsAppUrl = new URL(serviceCtaHref);
+if (serviceWhatsAppUrl.hostname !== "wa.me" || serviceWhatsAppUrl.pathname !== "/628113663435") issues.push("Service CTA did not target the configured WhatsApp number.");
+if (!serviceWhatsAppUrl.searchParams.get("text")?.includes("Pengembangan perangkat lunak khusus")) issues.push("Service CTA did not preserve its inquiry context.");
 
 await waitForPage(desktop, pageDefinitions[3]);
 await desktop.locator('[data-solution="automate"]').scrollIntoViewIfNeeded();
@@ -286,6 +296,8 @@ if (!cardTransform || cardTransform === "none") issues.push("Prototype card did 
 await desktop.mouse.move(0, 0);
 await erpCard.locator('[data-open-case="erp"]').click();
 if ((await desktop.locator("[data-gallery-total]").textContent()) !== "3") issues.push("ERP gallery image count is incorrect.");
+const caseWhatsAppUrl = new URL(await desktop.locator("[data-case-cta]").getAttribute("href"));
+if (!caseWhatsAppUrl.searchParams.get("text")?.includes("Platform Operasional ERP Modular")) issues.push("Prototype inquiry did not preserve the selected project context.");
 await desktop.click("[data-gallery-next]");
 await desktop.keyboard.press("ArrowRight");
 if ((await desktop.locator("[data-gallery-current]").textContent()) !== "3") issues.push("Gallery click and keyboard navigation failed.");
@@ -305,18 +317,14 @@ await desktop.click(".accordion-item:nth-child(2) button");
 if (!(await desktop.locator(".accordion-item:nth-child(2)").evaluate((item) => item.classList.contains("is-open")))) issues.push("About FAQ did not open.");
 
 await desktop.goto(`${baseUrl}/contact?service=ERP%20Development`, { waitUntil: "networkidle" });
-if ((await desktop.inputValue('[name="service"]')) !== "ERP Development") issues.push("Direct Contact query did not prefill the service.");
-await desktop.fill('[name="name"]', "Uji Visual");
-await desktop.fill('[name="company"]', "Perusahaan Contoh");
-await desktop.fill('[name="email"]', "visual@example.com");
-await desktop.click("[data-form-next]");
-if (!(await desktop.locator('[data-form-step="2"]').isVisible())) issues.push("Inquiry form did not advance to step two.");
-await desktop.fill('[name="brief"]', "Konteks konsultasi E2E ini cukup panjang untuk melewati validasi.");
-await desktop.check('[name="consent"]');
-await desktop.click("[data-submit-button]");
-await desktop.locator("[data-form-success]").waitFor({ state: "visible" });
-if (!submittedInquiry || submittedInquiry.service !== "ERP Development" || submittedInquiry.consent !== true) issues.push("Inquiry form did not submit its complete payload.");
-if ((await desktop.locator("[data-inquiry-id]").textContent()) !== "INQ-E2E-TEST") issues.push("Inquiry reference was not rendered.");
+const contactWhatsAppUrl = new URL(await desktop.locator("[data-contact-whatsapp]").getAttribute("href"));
+if (contactWhatsAppUrl.hostname !== "wa.me" || contactWhatsAppUrl.pathname !== "/628113663435") issues.push("Contact page did not target the configured WhatsApp number.");
+if (!contactWhatsAppUrl.searchParams.get("text")?.includes("Pengembangan ERP")) issues.push("Contact query did not preserve the selected service in its WhatsApp message.");
+if ((await desktop.locator("[data-whatsapp-context]").textContent()) !== "Pengembangan ERP") issues.push("Contact page did not show the selected service context.");
+const brokenWhatsAppLinks = await desktop.locator("[data-whatsapp-link]").evaluateAll((links) => links
+  .filter((link) => !link.href.startsWith("https://wa.me/628113663435?text=") || link.target !== "_blank" || !link.rel.includes("noopener"))
+  .map((link) => link.outerHTML));
+if (brokenWhatsAppLinks.length) issues.push(`Contact page exposed invalid WhatsApp links: ${brokenWhatsAppLinks.join(" | ")}`);
 
 const responsive = {};
 for (const viewport of [

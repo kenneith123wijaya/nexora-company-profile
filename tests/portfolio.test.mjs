@@ -4,8 +4,22 @@ import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { caseStudies, processData, serviceData } from "../content.js";
+import { buildWhatsAppMessage, buildWhatsAppUrl, WHATSAPP_NUMBER } from "../site-shell.js";
 
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+test("WhatsApp inquiry links use the configured number and preserve project context", () => {
+  assert.equal(WHATSAPP_NUMBER, "628113663435");
+  const url = new URL(buildWhatsAppUrl({
+    service: "ERP Development",
+    project: "Platform Operasional ERP Modular"
+  }));
+  assert.equal(url.origin, "https://wa.me");
+  assert.equal(url.pathname, "/628113663435");
+  assert.match(url.searchParams.get("text"), /Pengembangan ERP/);
+  assert.match(url.searchParams.get("text"), /Platform Operasional ERP Modular/);
+  assert.match(buildWhatsAppMessage(), /langkah selanjutnya/);
+});
 
 test("portfolio contains the four working prototypes and expected gallery counts", async () => {
   assert.deepEqual(Object.keys(caseStudies), ["erp", "rag", "faceswap", "cctv"]);
@@ -115,9 +129,10 @@ test("multi-page structure keeps focused services and delivery phases", async ()
   }
 
   const contactPage = await readFile(join(projectRoot, "contact.html"), "utf8");
-  assert.match(contactPage, /id="inquiry-form"/);
-  assert.match(contactPage, /value="ERP Development">Pengembangan ERP<\/option>/);
-  assert.match(contactPage, /value="Custom Software Development">Pengembangan Perangkat Lunak Khusus<\/option>/);
+  assert.match(contactPage, /data-contact-whatsapp/);
+  assert.match(contactPage, /href="https:\/\/wa\.me\/628113663435"/);
+  assert.match(contactPage, /Percakapan langsung, tanpa formulir/);
+  assert.doesNotMatch(contactPage, /id="inquiry-form"|fetch\("\/api\/inquiry"/);
   assert.doesNotMatch(homepage, /id="inquiry-form"/);
 
   for (const legalPage of ["privacy.html", "terms.html"]) {
